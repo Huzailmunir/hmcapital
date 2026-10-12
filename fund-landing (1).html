@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova Fund — Live Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000;
+  --panel:#0b0b10;
+  --panel-2:#111118;
+  --line:rgba(255,255,255,.08);
+  --text:#fff;
+  --muted:#8b8fa3;
+  --violet:#7C5CFF;
+  --cyan:#00E5FF;
+  --pink:#FF3D9A;
+  --amber:#FFC53D;
+  --green:#3DFFA2;
+  --grad:linear-gradient(100deg,var(--violet),var(--cyan) 45%,var(--pink));
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body.modal-open{overflow:hidden}
+h1,h2,h3,.num{font-family:"Space Grotesk",sans-serif;letter-spacing:-.02em}
+a{color:inherit}
+section[id],header[id]{scroll-margin-top:70px}
+
+/* scroll progress */
+#progress{position:fixed;top:0;left:0;height:3px;width:100%;transform-origin:0 50%;transform:scaleX(0);background:var(--grad);z-index:100}
+
+/* nav */
+nav.top{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:18px clamp(16px,4vw,48px);transition:background .4s,backdrop-filter .4s,border-color .4s;border-bottom:1px solid transparent}
+nav.top.scrolled{background:rgba(0,0,0,.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-color:var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-family:"Space Grotesk";font-weight:700;font-size:18px;text-decoration:none}
+.brand-mark{width:28px;height:28px;border-radius:8px;background:var(--grad);box-shadow:0 0 24px rgba(124,92,255,.6)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.fx-note{font-size:12px;color:var(--muted)}
+.fx-note b{color:#fff;font-weight:500}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;cursor:pointer;font:600 15px "Space Grotesk";letter-spacing:.01em;border-radius:999px;padding:14px 26px;text-decoration:none;transition:transform .25s,box-shadow .25s,background .25s;color:#000;background:var(--grad);background-size:200% 100%;box-shadow:0 0 0 rgba(0,229,255,0)}
+.btn:hover{transform:translateY(-2px);box-shadow:0 10px 40px rgba(0,229,255,.35);background-position:100% 0}
+.btn.ghost{background:rgba(255,255,255,.05);color:#fff;border:1px solid var(--line)}
+.btn.ghost:hover{background:rgba(255,255,255,.1);box-shadow:none}
+.btn.sm{padding:9px 18px;font-size:13px}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* currency toggle */
+.toggle{position:relative;display:flex;background:#121219;border:1px solid var(--line);border-radius:999px;padding:4px;cursor:pointer;user-select:none}
+.toggle button{position:relative;z-index:2;background:none;border:0;color:var(--muted);font:600 13px "Space Grotesk";padding:8px 16px;border-radius:999px;cursor:pointer;transition:color .3s;letter-spacing:.04em}
+.toggle button.active{color:#000}
+.toggle .thumb{position:absolute;z-index:1;top:4px;bottom:4px;left:4px;border-radius:999px;background:var(--grad);transition:transform .5s cubic-bezier(.7,0,.2,1),width .5s;box-shadow:0 0 20px rgba(0,229,255,.4)}
+
+/* side nav */
+.side{position:fixed;left:24px;top:50%;transform:translateY(-50%);z-index:40;display:flex;flex-direction:column;gap:6px}
+.side a{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--muted);font:500 13px "Space Grotesk";padding:6px 10px 6px 6px;border-radius:999px;transition:color .3s,background .3s}
+.side a .dot{width:8px;height:8px;border-radius:4px;background:rgba(255,255,255,.25);transition:all .4s cubic-bezier(.7,0,.2,1);flex:none}
+.side a .tx{opacity:0;transform:translateX(-6px);transition:opacity .3s,transform .3s;white-space:nowrap}
+.side:hover a .tx,.side a.active .tx{opacity:1;transform:none}
+.side a:hover{color:#fff}
+.side a.active{color:#fff}
+.side a.active .dot{height:22px;background:var(--grad);box-shadow:0 0 14px rgba(0,229,255,.6)}
+.side a.hot .dot{background:var(--pink)}
+.side a.hot.active .dot{background:linear-gradient(180deg,var(--pink),var(--amber))}
+
+/* hero */
+.hero{position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:120px 16px 80px;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.55;animation:float 18s ease-in-out infinite}
+.orb.o1{width:520px;height:520px;background:var(--violet);top:-120px;left:-120px}
+.orb.o2{width:420px;height:420px;background:var(--cyan);bottom:-140px;right:-80px;animation-delay:-6s;opacity:.35}
+.orb.o3{width:300px;height:300px;background:var(--pink);top:40%;left:55%;animation-delay:-12s;opacity:.3}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(60px,-40px) scale(1.1)}66%{transform:translate(-40px,50px) scale(.95)}}
+.grid-bg{position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse at center,#000 20%,transparent 70%);-webkit-mask-image:radial-gradient(ellipse at center,#000 20%,transparent 70%)}
+.hero-inner{position:relative;z-index:2}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);border:1px solid var(--line);background:rgba(255,255,255,.03);padding:7px 14px;border-radius:999px;margin-bottom:28px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(61,255,162,.7);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 10px rgba(61,255,162,0)}100%{box-shadow:0 0 0 0 rgba(61,255,162,0)}}
+.hero-label{font-size:clamp(14px,1.6vw,18px);color:var(--muted);text-transform:uppercase;letter-spacing:.2em;margin-bottom:12px}
+.hero-aum{font-size:clamp(48px,11vw,150px);font-weight:700;line-height:1;background:var(--grad);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sheen 8s linear infinite;white-space:nowrap}
+@keyframes sheen{to{background-position:200% 0}}
+.hero-sub{margin-top:26px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.hero-cta{margin-top:40px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:15px}
+.chip.up{color:var(--green);border-color:rgba(61,255,162,.25);background:rgba(61,255,162,.06)}
+.scroll-cue{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);z-index:2;width:26px;height:42px;border:2px solid rgba(255,255,255,.25);border-radius:14px}
+.scroll-cue::after{content:"";position:absolute;left:50%;top:8px;width:4px;height:8px;margin-left:-2px;border-radius:2px;background:#fff;animation:cue 1.8s infinite}
+@keyframes cue{0%{opacity:0;transform:translateY(0)}40%{opacity:1}100%{opacity:0;transform:translateY(14px)}}
+
+/* ticker */
+.ticker{border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;background:#050507;position:relative}
+.ticker::before,.ticker::after{content:"";position:absolute;top:0;bottom:0;width:80px;z-index:2}
+.ticker::before{left:0;background:linear-gradient(90deg,#050507,transparent)}
+.ticker::after{right:0;background:linear-gradient(-90deg,#050507,transparent)}
+.ticker-track{display:flex;width:max-content;animation:marquee 36s linear infinite}
+.ticker:hover .ticker-track{animation-play-state:paused}
+@keyframes marquee{to{transform:translateX(-50%)}}
+.tick{display:flex;align-items:center;gap:12px;padding:18px 34px;white-space:nowrap;font-family:"Space Grotesk";font-size:15px;border-right:1px solid var(--line)}
+.tick .sw{width:10px;height:10px;border-radius:3px}
+.tick .tv{color:var(--muted)}
+.tick .tr{color:var(--green);font-weight:600}
+.tick .tr.neg{color:var(--pink)}
+
+/* sections */
+section{padding:clamp(80px,12vw,140px) clamp(16px,5vw,64px);max-width:1280px;margin:0 auto}
+.sec-head{margin-bottom:48px}
+.sec-kicker{font:600 13px "Space Grotesk";letter-spacing:.2em;text-transform:uppercase;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:12px}
+.sec-kicker.warm{background:linear-gradient(100deg,var(--pink),var(--amber));-webkit-background-clip:text;background-clip:text}
+.sec-head h2{font-size:clamp(32px,5vw,56px);font-weight:600;line-height:1.05}
+.sec-head p{color:var(--muted);margin-top:14px;max-width:600px;line-height:1.6}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(48px);transition:opacity 1s cubic-bezier(.2,.7,.2,1),transform 1s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}.d4{transition-delay:.32s}
+
+/* cards */
+.stats{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:28px;overflow:hidden;--mx:50%;--my:50%}
+.card::before{content:"";position:absolute;inset:0;background:radial-gradient(400px circle at var(--mx) var(--my),rgba(124,92,255,.14),transparent 40%);opacity:0;transition:opacity .4s;pointer-events:none}
+.card:hover::before{opacity:1}
+.lbl{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;display:flex;align-items:center;gap:8px}
+.lbl i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.card .val{font-size:clamp(30px,3.6vw,46px);font-weight:600;margin-top:16px;line-height:1.05}
+.card .foot{margin-top:12px;font-size:14px;color:var(--muted);line-height:1.5}
+.up{color:var(--green)}
+.span-4{grid-column:span 4}.span-5{grid-column:span 5}.span-6{grid-column:span 6}.span-7{grid-column:span 7}.span-3{grid-column:span 3}.span-8{grid-column:span 8}.span-12{grid-column:span 12}
+.card.feature{background:linear-gradient(160deg,rgba(124,92,255,.22),rgba(0,229,255,.06) 60%,var(--panel));border-color:rgba(124,92,255,.35)}
+.card.warm{background:linear-gradient(160deg,rgba(255,61,154,.18),rgba(255,197,61,.05) 60%,var(--panel));border-color:rgba(255,61,154,.3)}
+
+/* chart */
+.chart-card{padding:28px 28px 20px}
+.chart-top{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:24px}
+.chart-top .big{font-size:clamp(28px,3.4vw,42px);font-weight:600}
+.chart-wrap{position:relative;height:340px;padding-left:64px}
+.chart-wrap svg{width:100%;height:100%;display:block;overflow:visible}
+.y-labels{position:absolute;left:0;top:0;bottom:0;width:60px}
+.y-labels span{position:absolute;left:0;transform:translateY(-50%);font-size:12px;color:var(--muted);font-family:"Space Grotesk"}
+.x-labels{display:flex;justify-content:space-between;padding-left:64px;margin-top:12px;font-size:12px;color:var(--muted);font-family:"Space Grotesk"}
+.gridline{stroke:rgba(255,255,255,.06);stroke-width:1;vector-effect:non-scaling-stroke}
+#line{fill:none;stroke:url(#lineGrad);stroke-width:3;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+#area{fill:url(#areaGrad);opacity:0;transition:opacity 1.4s .8s}
+.drawn #area{opacity:1}
+.hover-line{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,.25);pointer-events:none;opacity:0;transition:opacity .2s}
+.hover-dot{position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--cyan);box-shadow:0 0 18px var(--cyan);transform:translate(-50%,-50%);pointer-events:none;opacity:0;transition:opacity .2s}
+.tooltip{position:absolute;background:rgba(17,17,24,.95);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13px;pointer-events:none;opacity:0;transform:translate(-50%,calc(-100% - 18px));transition:opacity .2s;white-space:nowrap;backdrop-filter:blur(8px)}
+.tooltip b{display:block;font:600 16px "Space Grotesk";margin-top:2px}
+.chart-plot{position:relative;height:100%}
+
+/* allocation */
+.alloc{display:grid;grid-template-columns:1fr 1.1fr;gap:16px;align-items:stretch}
+.donut-card{display:flex;align-items:center;justify-content:center;padding:40px}
+.donut{position:relative;width:min(380px,100%);aspect-ratio:1}
+.donut svg{width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.seg{fill:none;stroke-width:22;transition:stroke-dasharray 1.4s cubic-bezier(.7,0,.2,1),stroke-width .3s,opacity .3s;cursor:pointer}
+.seg:hover,.seg.hl{stroke-width:30}
+.donut.has-hl .seg:not(.hl){opacity:.3}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;padding:0 22%}
+.donut-center .dc-l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.14em}
+.donut-center .dc-v{font:600 clamp(22px,3vw,34px) "Space Grotesk";margin:6px 0 2px}
+.donut-center .dc-p{font-size:14px;color:var(--muted)}
+.legend{display:flex;flex-direction:column;gap:6px}
+.leg{display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;cursor:pointer;transition:background .25s}
+.leg:hover,.leg.hl{background:rgba(255,255,255,.05)}
+.leg .sw{width:14px;height:14px;border-radius:4px}
+.leg .nm{font-weight:500}
+.leg .bar{grid-column:2/4;height:4px;border-radius:2px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:2px}
+.leg .bar span{display:block;height:100%;width:0;border-radius:2px;transition:width 1.4s cubic-bezier(.2,.7,.2,1)}
+.leg .amt{font-family:"Space Grotesk";text-align:right}
+.leg .amt small{display:block;color:var(--muted);font-size:12px}
+
+/* returns bars */
+.rbars{display:flex;flex-direction:column;gap:22px}
+.rrow{display:grid;grid-template-columns:200px 1fr 80px;align-items:center;gap:20px}
+.rrow .rn{font-weight:500}
+.rrow .rt{height:14px;border-radius:7px;background:rgba(255,255,255,.05);overflow:hidden}
+.rrow .rt span{display:block;height:100%;width:0;border-radius:7px;transition:width 1.6s cubic-bezier(.2,.7,.2,1);position:relative}
+.rrow .rt span::after,.hbar span::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:shimmer 2.6s infinite;transform:translateX(-100%)}
+@keyframes shimmer{to{transform:translateX(100%)}}
+.rrow .rv{font:600 18px "Space Grotesk";text-align:right;color:var(--green)}
+
+/* liabilities */
+.gauge{position:relative;width:100%;max-width:340px;margin:18px auto 0}
+.gauge svg{width:100%;display:block;overflow:visible}
+.gauge .g-arc{fill:none;stroke-width:18;stroke-linecap:round}
+#ltvArc{transition:stroke-dashoffset 2s cubic-bezier(.2,.7,.2,1)}
+.gauge-val{position:absolute;left:0;right:0;bottom:6px;text-align:center}
+.gauge-val .num{font-size:clamp(40px,5vw,56px);font-weight:700;line-height:1}
+.gauge-val small{display:block;color:var(--muted);font-size:13px;margin-top:6px}
+.gauge-scale{display:flex;justify-content:space-between;max-width:340px;margin:10px auto 0;font:12px "Space Grotesk";color:var(--muted)}
+.status{display:inline-flex;align-items:center;gap:8px;margin-top:18px;padding:7px 14px;border-radius:999px;font-size:13px;font-weight:500}
+.status i{width:8px;height:8px;border-radius:50%;background:currentColor}
+.stack{display:flex;height:56px;border-radius:14px;overflow:hidden;margin-top:22px;background:rgba(255,255,255,.04)}
+.stack div{height:100%;width:0;transition:width 1.8s cubic-bezier(.2,.7,.2,1);display:flex;align-items:center;padding:0 16px;font:600 14px "Space Grotesk";color:#000;white-space:nowrap;overflow:hidden}
+.stack .eq{background:linear-gradient(90deg,var(--violet),var(--cyan))}
+.stack .debt{background:linear-gradient(90deg,var(--pink),var(--amber));transition-delay:.3s}
+.stack-legend{display:flex;justify-content:space-between;gap:16px;margin-top:16px;flex-wrap:wrap}
+.stack-legend div{font-family:"Space Grotesk"}
+.stack-legend small{display:block;color:var(--muted);font:12px Inter;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px}
+.hbars{display:flex;flex-direction:column;gap:22px;margin-top:22px}
+.hrow .top{display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px}
+.hrow .top b{font:600 16px "Space Grotesk"}
+.hbar{height:16px;border-radius:8px;background:rgba(255,255,255,.05);overflow:hidden}
+.hbar span{display:block;height:100%;width:0;border-radius:8px;position:relative;transition:width 1.6s cubic-bezier(.2,.7,.2,1)}
+.cover-badge{display:flex;align-items:center;gap:16px;margin-top:26px;padding:18px 20px;border-radius:16px;background:rgba(61,255,162,.06);border:1px solid rgba(61,255,162,.2)}
+.cover-badge .num{font-size:34px;font-weight:700;color:var(--green);line-height:1}
+.cover-badge p{font-size:14px;color:var(--muted);line-height:1.5}
+.cover-badge p b{color:#fff;font-weight:500}
+
+/* about */
+.about{display:grid;grid-template-columns:.9fr 1.1fr;gap:16px}
+.profile{display:flex;flex-direction:column;align-items:flex-start;gap:20px;padding:clamp(28px,4vw,44px)}
+.avatar{width:96px;height:96px;border-radius:28px;background:var(--grad);display:flex;align-items:center;justify-content:center;font:700 34px "Space Grotesk";color:#000;box-shadow:0 0 50px rgba(124,92,255,.5);position:relative}
+.avatar::after{content:"";position:absolute;inset:-6px;border-radius:32px;border:1px solid rgba(255,255,255,.15)}
+.profile h3{font-size:clamp(28px,3.4vw,40px);font-weight:600;line-height:1.05}
+.profile .role{color:var(--muted);margin-top:6px}
+.profile .bio{color:#c9cbd6;line-height:1.7;font-size:15px}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%}
+.fact{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:16px;padding:16px}
+.fact .num{font-size:28px;font-weight:600;display:block}
+.fact small{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.1em}
+.edu{display:flex;flex-direction:column;gap:14px;margin-top:22px}
+.edu-item{display:grid;grid-template-columns:48px 1fr auto;gap:16px;align-items:center;padding:16px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+.edu-ico{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center}
+.edu-item b{display:block;font:600 16px "Space Grotesk"}
+.edu-item span{color:var(--muted);font-size:14px}
+.pill{font:600 13px "Space Grotesk";padding:6px 12px;border-radius:999px;white-space:nowrap}
+.track-list{display:flex;flex-direction:column;gap:12px;margin-top:22px}
+.track-item{display:flex;gap:14px;align-items:flex-start;padding:16px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.03);line-height:1.5}
+.track-item .ti{width:28px;height:28px;border-radius:9px;flex:none;background:linear-gradient(135deg,var(--violet),var(--cyan));display:flex;align-items:center;justify-content:center;color:#000;font:700 13px "Space Grotesk"}
+.track-item.placeholder{border-style:dashed;border-color:rgba(255,197,61,.45);color:var(--amber);background:rgba(255,197,61,.04)}
+.track-item.placeholder .ti{background:rgba(255,197,61,.2);color:var(--amber)}
+
+/* invest + lock-up */
+.invest{text-align:center;padding:clamp(40px,6vw,72px) clamp(20px,5vw,72px);background:radial-gradient(ellipse at top,rgba(124,92,255,.25),transparent 60%),var(--panel)}
+.invest h2{font-size:clamp(34px,5.5vw,64px);font-weight:600;line-height:1.05;max-width:800px;margin:0 auto}
+.invest .lead{color:var(--muted);max-width:620px;margin:18px auto 0;line-height:1.6}
+.timeline{position:relative;max-width:900px;margin:64px auto 0;display:grid;grid-template-columns:repeat(4,1fr)}
+.tl-rail{position:absolute;top:27px;left:12.5%;right:12.5%;height:4px;border-radius:2px;background:rgba(255,255,255,.08)}
+.tl-rail span{display:block;height:100%;width:0;border-radius:2px;background:linear-gradient(90deg,var(--pink),var(--amber) 66%,var(--green));transition:width 2.4s cubic-bezier(.2,.7,.2,1);box-shadow:0 0 18px rgba(255,61,154,.5)}
+.tl-node{position:relative;display:flex;flex-direction:column;align-items:center;gap:12px;padding:0 6px;opacity:0;transform:translateY(16px);transition:opacity .7s,transform .7s}
+.timeline.go .tl-node{opacity:1;transform:none}
+.timeline.go .tl-node:nth-child(3){transition-delay:.5s}.timeline.go .tl-node:nth-child(4){transition-delay:1.1s}.timeline.go .tl-node:nth-child(5){transition-delay:1.8s}
+.tl-ico{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#121219;border:2px solid rgba(255,255,255,.12);position:relative;z-index:1}
+.tl-ico svg{width:24px;height:24px}
+.tl-node.lock .tl-ico{border-color:var(--pink);color:var(--pink);box-shadow:0 0 22px rgba(255,61,154,.35)}
+.tl-node.start .tl-ico{border-color:var(--violet);color:var(--violet);box-shadow:0 0 22px rgba(124,92,255,.4)}
+.tl-node.open .tl-ico{border-color:var(--green);color:var(--green);box-shadow:0 0 26px rgba(61,255,162,.45)}
+.tl-node > div{display:flex;flex-direction:column;gap:4px}
+.tl-node b{font:600 16px "Space Grotesk"}
+.tl-node small{color:var(--muted);font-size:13px;line-height:1.4}
+.lock-note{max-width:760px;margin:48px auto 0;text-align:left;display:flex;gap:16px;padding:20px 22px;border-radius:18px;background:rgba(255,61,154,.06);border:1px solid rgba(255,61,154,.25);line-height:1.6;font-size:15px}
+.lock-note svg{flex:none;width:24px;height:24px;color:var(--pink);margin-top:2px}
+.lock-note b{color:#fff}
+.lock-note p{color:#d3d4dc}
+.invest-cta{margin-top:40px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+/* raise */
+.raise{text-align:center;padding:clamp(40px,6vw,72px) clamp(20px,5vw,72px)}
+.raise .big{font-size:clamp(48px,9vw,112px);font-weight:700;line-height:1}
+.raise .of{color:var(--muted);font-size:clamp(16px,2vw,22px);margin-top:12px}
+.track{margin:44px auto 0;max-width:900px;height:18px;border-radius:9px;background:rgba(255,255,255,.06);overflow:hidden;position:relative}
+.track .fill{height:100%;width:0;background:var(--grad);border-radius:9px;transition:width 2s cubic-bezier(.2,.7,.2,1);box-shadow:0 0 30px rgba(0,229,255,.5);position:relative}
+.track .fill::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:shimmer 2.2s infinite;transform:translateX(-100%)}
+.track-meta{max-width:900px;margin:14px auto 0;display:flex;justify-content:space-between;color:var(--muted);font-size:14px;font-family:"Space Grotesk"}
+.raise-stats{display:flex;justify-content:center;gap:clamp(24px,6vw,80px);margin-top:48px;flex-wrap:wrap}
+.raise-stats div{font:600 28px "Space Grotesk"}
+.raise-stats small{display:block;font:400 13px Inter;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.12em}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;pointer-events:none;transition:opacity .35s}
+.modal.open{opacity:1;pointer-events:auto}
+.modal-card{width:100%;max-width:500px;max-height:calc(100vh - 32px);overflow:auto;background:#0d0d13;border:1px solid rgba(124,92,255,.35);border-radius:26px;padding:clamp(24px,4vw,36px);transform:translateY(30px) scale(.97);transition:transform .45s cubic-bezier(.2,.7,.2,1);box-shadow:0 30px 120px rgba(124,92,255,.25)}
+.modal.open .modal-card{transform:none}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.modal-head h3{font-size:28px;font-weight:600}
+.modal-head p{color:var(--muted);font-size:14px;margin-top:6px}
+.x{background:rgba(255,255,255,.06);border:0;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px;flex:none}
+.x:hover{background:rgba(255,255,255,.12)}
+.field{margin-top:18px}
+.field label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.field input{width:100%;background:#15151d;border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:#fff;font:500 16px Inter;outline:none;transition:border-color .25s,box-shadow .25s}
+.field input:focus{border-color:var(--cyan);box-shadow:0 0 0 4px rgba(0,229,255,.12)}
+.amt-wrap{position:relative}
+.amt-wrap .cur{position:absolute;left:16px;top:50%;transform:translateY(-50%);font:600 20px "Space Grotesk";color:var(--muted)}
+.amt-wrap input{padding-left:54px;font:600 22px "Space Grotesk"}
+.amt-alt{font-size:13px;color:var(--muted);margin-top:8px;min-height:18px}
+.quick{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.quick button{background:rgba(255,255,255,.05);border:1px solid var(--line);color:#fff;border-radius:999px;padding:7px 14px;font:500 13px "Space Grotesk";cursor:pointer}
+.quick button:hover{border-color:var(--cyan)}
+.agree{display:flex;gap:12px;align-items:flex-start;margin-top:22px;padding:16px;border-radius:14px;background:rgba(255,61,154,.06);border:1px solid rgba(255,61,154,.25);cursor:pointer;font-size:14px;line-height:1.5;color:#d3d4dc}
+.agree input{margin-top:3px;width:18px;height:18px;accent-color:var(--pink);flex:none}
+.modal .btn{width:100%;margin-top:22px;padding:16px}
+.fine{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5;text-align:center}
+.done{text-align:center;padding:20px 0}
+.done .tick-ico{width:72px;height:72px;margin:0 auto 18px;border-radius:50%;background:rgba(61,255,162,.1);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;color:var(--green);box-shadow:0 0 30px rgba(61,255,162,.35)}
+
+footer{border-top:1px solid var(--line);padding:40px clamp(16px,5vw,64px) 110px;color:var(--muted);font-size:13px;line-height:1.7;max-width:1280px;margin:0 auto}
+
+@media (max-width:1240px){
+  .side{left:50%;top:auto;bottom:16px;transform:translateX(-50%);flex-direction:row;gap:2px;background:rgba(12,12,18,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:999px;padding:6px;max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none}
+  .side::-webkit-scrollbar{display:none}
+  .side a{padding:8px 12px;flex:none}
+  .side a .dot{display:none}
+  .side a .tx{opacity:1;transform:none}
+  .side a.active{background:var(--grad);color:#000}
+  .side a.hot.active{background:linear-gradient(90deg,var(--pink),var(--amber))}
+}
+@media (max-width:900px){
+  .span-4,.span-3,.span-5,.span-6,.span-7,.span-8{grid-column:span 12}
+  .alloc,.about{grid-template-columns:1fr}
+  .rrow{grid-template-columns:1fr 70px}
+  .rrow .rt{grid-column:1/3;grid-row:2}
+  .fx-note{display:none}
+  .timeline{grid-template-columns:1fr;gap:26px;max-width:420px}
+  .tl-rail{top:0;bottom:0;left:28px;right:auto;width:4px;height:auto}
+  .tl-rail span{width:100%!important;height:0;transition:height 2.4s cubic-bezier(.2,.7,.2,1)}
+  .timeline.go .tl-rail span{height:100%}
+  .tl-node{flex-direction:row;text-align:left;align-items:center;gap:18px;padding:0}
+}
+@media (max-width:560px){
+  .chart-wrap{height:260px;padding-left:52px}
+  .x-labels{padding-left:52px}
+  .x-labels span:nth-child(even){visibility:hidden}
+  .toggle button{padding:7px 10px}
+  .nav-invest{display:none}
+  .facts{grid-template-columns:1fr 1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+  .reveal,.tl-node{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<nav class="top" id="nav">
+  <a href="#top" class="brand"><div class="brand-mark"></div><span id="fundName">Nova Fund</span></a>
+  <div class="nav-right">
+    <span class="fx-note">1 GBP = <b id="fxRate">₨376.20</b> <span id="fxSrc">· indicative</span></span>
+    <button class="btn sm nav-invest" data-invest>Invest</button>
+    <div class="toggle" id="toggle" role="group" aria-label="Display currency">
+      <div class="thumb" id="thumb"></div>
+      <button data-cur="GBP" class="active" aria-pressed="true">£ GBP</button>
+      <button data-cur="PKR" aria-pressed="false">₨ PKR</button>
+    </div>
+  </div>
+</nav>
+
+<aside class="side" id="side" aria-label="Sections">
+  <a href="#top"><span class="dot"></span><span class="tx">Home</span></a>
+  <a href="#overview"><span class="dot"></span><span class="tx">Overview</span></a>
+  <a href="#performance"><span class="dot"></span><span class="tx">Performance</span></a>
+  <a href="#allocation"><span class="dot"></span><span class="tx">Allocation</span></a>
+  <a href="#liabilities" class="hot"><span class="dot"></span><span class="tx">Liabilities</span></a>
+  <a href="#about"><span class="dot"></span><span class="tx">About me</span></a>
+  <a href="#invest"><span class="dot"></span><span class="tx">Invest</span></a>
+</aside>
+
+<header class="hero" id="top">
+  <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+  <div class="grid-bg"></div>
+  <div class="hero-inner">
+    <div class="eyebrow reveal"><span class="live-dot"></span> Fund overview · <span id="asOf"></span></div>
+    <div class="hero-label reveal d1">Assets under management</div>
+    <div class="hero-aum num reveal d2" data-count="gross">£0</div>
+    <div class="hero-sub reveal d3">
+      <span class="chip up">▲ <span data-count="ret" data-kind="pct">0%</span>&nbsp;return to investors</span>
+      <span class="chip">Net asset value&nbsp;<span data-count="nav">£0</span></span>
+    </div>
+    <div class="hero-cta reveal d4">
+      <button class="btn" data-invest>Invest with us →</button>
+      <a class="btn ghost" href="#about">About the manager</a>
+    </div>
+  </div>
+  <a href="#overview" class="scroll-cue" aria-label="Scroll down"></a>
+</header>
+
+<div class="ticker"><div class="ticker-track" id="ticker"></div></div>
+
+<section id="overview">
+  <div class="sec-head reveal">
+    <div class="sec-kicker">Overview</div>
+    <h2>The fund at a glance</h2>
+  </div>
+  <div class="stats">
+    <div class="card feature span-6 reveal">
+      <div class="lbl"><i style="background:var(--violet)"></i>Capital raised</div>
+      <div class="val num" data-count="raised">£0</div>
+      <div class="foot">Committed by <span data-count="investors" data-kind="int">0</span> investors</div>
+    </div>
+    <div class="card span-6 reveal d1">
+      <div class="lbl"><i style="background:var(--green)"></i>Total return</div>
+      <div class="val num" data-count="profit">£0</div>
+      <div class="foot"><span class="up">▲ <span data-count="ret" data-kind="pct">0%</span></span> on capital raised, after the loan</div>
+    </div>
+    <div class="card span-4 reveal d1">
+      <div class="lbl"><i style="background:var(--cyan)"></i>Total cash</div>
+      <div class="val num" data-count="cash">£0</div>
+      <div class="foot"><span data-count="cashPct" data-kind="plainPct">0%</span> of assets held in cash</div>
+    </div>
+    <div class="card span-4 reveal d2">
+      <div class="lbl"><i style="background:var(--pink)"></i>Year to date</div>
+      <div class="val num" data-count="ytd" data-kind="pct">0%</div>
+      <div class="foot">Performance since 1 Jan</div>
+    </div>
+    <div class="card span-4 reveal d3">
+      <div class="lbl"><i style="background:var(--amber)"></i>Invested capital</div>
+      <div class="val num" data-count="invested">£0</div>
+      <div class="foot">Deployed across <span id="classCount">0</span> asset classes</div>
+    </div>
+  </div>
+</section>
+
+<section id="performance">
+  <div class="sec-head reveal">
+    <div class="sec-kicker">Performance</div>
+    <h2>Net asset value over time</h2>
+    <p>Month-end value belonging to investors (total assets minus the loan) over the last twelve months. Hover the chart to see each month.</p>
+  </div>
+  <div class="card chart-card reveal d1">
+    <div class="chart-top">
+      <div>
+        <div class="lbl">12-month change</div>
+        <div class="big num" style="color:var(--green)" data-count="chg12" data-kind="pct">0%</div>
+      </div>
+      <div style="text-align:right">
+        <div class="lbl" style="justify-content:flex-end">Peak value</div>
+        <div class="big num" data-count="peak">£0</div>
+      </div>
+    </div>
+    <div class="chart-wrap" id="chartWrap">
+      <div class="y-labels" id="yLabels"></div>
+      <div class="chart-plot" id="plot">
+        <svg viewBox="0 0 1000 340" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="lineGrad" x1="0" x2="1">
+              <stop offset="0" stop-color="#7C5CFF"/><stop offset=".5" stop-color="#00E5FF"/><stop offset="1" stop-color="#FF3D9A"/>
+            </linearGradient>
+            <linearGradient id="areaGrad" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#00E5FF" stop-opacity=".28"/><stop offset="1" stop-color="#7C5CFF" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <g id="gridG"></g>
+          <path id="area"/>
+          <path id="line"/>
+        </svg>
+        <div class="hover-line" id="hLine"></div>
+        <div class="hover-dot" id="hDot"></div>
+        <div class="tooltip" id="tip"></div>
+      </div>
+    </div>
+    <div class="x-labels" id="xLabels"></div>
+  </div>
+</section>
+
+<section id="allocation">
+  <div class="sec-head reveal">
+    <div class="sec-kicker">Allocation</div>
+    <h2>Where the money is</h2>
+    <p>Breakdown of total assets by class. Hover a slice or a row to focus it.</p>
+  </div>
+  <div class="alloc">
+    <div class="card donut-card reveal">
+      <div class="donut" id="donut">
+        <svg viewBox="0 0 220 220" id="donutSvg"></svg>
+        <div class="donut-center">
+          <div class="dc-l" id="dcL">Total assets</div>
+          <div class="dc-v" id="dcV">£0</div>
+          <div class="dc-p" id="dcP"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card reveal d1"><div class="legend" id="legend"></div></div>
+  </div>
+  <div class="card reveal d1" style="margin-top:16px;padding:clamp(24px,4vw,44px)">
+    <div class="lbl" style="margin-bottom:26px">Return by asset class</div>
+    <div class="rbars" id="rbars"></div>
+  </div>
+</section>
+
+<section id="liabilities">
+  <div class="sec-head reveal">
+    <div class="sec-kicker warm">Liabilities</div>
+    <h2>What the fund owes</h2>
+    <p>The fund carries one loan. Its monthly cost is paid from income generated by selling options, so investor capital isn't used to service the debt.</p>
+  </div>
+  <div class="stats">
+    <div class="card warm span-5 reveal">
+      <div class="lbl"><i style="background:var(--pink)"></i>Outstanding loan</div>
+      <div class="val num" data-count="loan">£0</div>
+      <div class="foot"><span data-count="monthlyCost">£0</span> a month · <span data-count="annualCost">£0</span> a year</div>
+      <div class="stack" id="stack">
+        <div class="eq" data-w="0">Investors</div>
+        <div class="debt" data-w="0">Loan</div>
+      </div>
+      <div class="stack-legend">
+        <div><small>Investors' equity</small><span data-count="nav">£0</span></div>
+        <div style="text-align:right"><small>Debt</small><span data-count="loan">£0</span></div>
+      </div>
+    </div>
+    <div class="card span-7 reveal d1" style="text-align:center">
+      <div class="lbl" style="justify-content:center">Loan-to-value (LTV)</div>
+      <div class="gauge">
+        <svg viewBox="0 0 220 124">
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0" x2="1">
+              <stop offset="0" stop-color="#3DFFA2"/><stop offset=".55" stop-color="#FFC53D"/><stop offset="1" stop-color="#FF3D9A"/>
+            </linearGradient>
+          </defs>
+          <path class="g-arc" d="M20 110 A90 90 0 0 1 200 110" stroke="rgba(255,255,255,.07)"/>
+          <path class="g-arc" id="ltvArc" d="M20 110 A90 90 0 0 1 200 110" stroke="url(#gaugeGrad)"/>
+        </svg>
+        <div class="gauge-val">
+          <div class="num" data-count="ltv" data-kind="plainPct">0%</div>
+          <small><span data-count="loan">£0</span> loan ÷ <span data-count="gross">£0</span> assets</small>
+        </div>
+      </div>
+      <div class="gauge-scale"><span>0%</span><span>50%</span><span>100%</span></div>
+      <div class="status" id="ltvStatus"><i></i><span></span></div>
+    </div>
+    <div class="card span-12 reveal d2">
+      <div class="lbl"><i style="background:var(--green)"></i>Monthly loan cost vs options income</div>
+      <div class="hbars">
+        <div class="hrow">
+          <div class="top"><span>Options income generated</span><b data-count="optionsIncome">£0</b></div>
+          <div class="hbar"><span id="barIncome" style="background:linear-gradient(90deg,#3DFFA288,#3DFFA2);box-shadow:0 0 18px #3DFFA266"></span></div>
+        </div>
+        <div class="hrow">
+          <div class="top"><span>Loan repayment</span><b data-count="monthlyCost">£0</b></div>
+          <div class="hbar"><span id="barCost" style="background:linear-gradient(90deg,#FF3D9A88,#FF3D9A);box-shadow:0 0 18px #FF3D9A66;transition-delay:.25s"></span></div>
+        </div>
+      </div>
+      <div class="cover-badge">
+        <div class="num" data-count="coverage" data-kind="ratio">0×</div>
+        <p>The loan cost is <b>fully covered</b> by options income, leaving a surplus of <b data-count="surplus">£0</b> a month that stays in the fund.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="sec-head reveal">
+    <div class="sec-kicker">About me</div>
+    <h2>Meet the manager</h2>
+  </div>
+  <div class="about">
+    <div class="card profile reveal">
+      <div class="avatar" id="initials">HM</div>
+      <div>
+        <h3 id="mgrName">Huzail Kamran Munir</h3>
+        <div class="role">Founder &amp; Fund Manager</div>
+      </div>
+      <p class="bio" id="mgrBio"></p>
+      <div class="facts">
+        <div class="fact"><span class="num" id="mgrAge">21</span><small>Age</small></div>
+        <div class="fact"><span class="num" style="color:var(--green)">89%</span><small>BSc result</small></div>
+        <div class="fact"><span class="num" style="color:var(--cyan)">MSc</span><small>In progress</small></div>
+      </div>
+    </div>
+    <div class="card reveal d1" style="padding:clamp(28px,4vw,44px)">
+      <div class="lbl">Education</div>
+      <div class="edu">
+        <div class="edu-item">
+          <div class="edu-ico" style="background:rgba(61,255,162,.1);color:var(--green)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+          </div>
+          <div><b>BSc</b><span>Graduated</span></div>
+          <span class="pill" style="background:rgba(61,255,162,.12);color:var(--green)">89%</span>
+        </div>
+        <div class="edu-item">
+          <div class="edu-ico" style="background:rgba(0,229,255,.1);color:var(--cyan)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M8 9l2 2-2 2M13 13h3"/></svg>
+          </div>
+          <div><b>MSc Computer Science</b><span>Currently studying</span></div>
+          <span class="pill" style="background:rgba(0,229,255,.12);color:var(--cyan)">In progress</span>
+        </div>
+      </div>
+      <div class="lbl" style="margin-top:34px">Track record</div>
+      <div class="track-list" id="trackList"></div>
+    </div>
+  </div>
+</section>
+
+<section id="invest">
+  <div class="card invest reveal">
+    <div class="sec-kicker">Invest</div>
+    <h2>Grow with the fund</h2>
+    <p class="lead">Register your interest below and we'll be in touch with the next steps. Please read the lock-up terms first.</p>
+
+    <div class="timeline" id="timeline">
+      <div class="tl-rail"><span id="tlFill"></span></div>
+      <div class="tl-node start">
+        <div class="tl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        <div><b>Day 1</b><small>Your money is invested</small></div>
+      </div>
+      <div class="tl-node lock">
+        <div class="tl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+        <div><b>Year 1</b><small>Locked</small></div>
+      </div>
+      <div class="tl-node lock">
+        <div class="tl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+        <div><b>Year 2</b><small>Locked</small></div>
+      </div>
+      <div class="tl-node open">
+        <div class="tl-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></div>
+        <div><b>Year 3</b><small>Withdrawals available</small></div>
+      </div>
+    </div>
+
+    <div class="lock-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+      <p><b>3-year minimum lock-up.</b> Once invested, your money cannot be withdrawn for at least three years from the date it is received by the fund. This lets the fund hold positions through market cycles without being forced to sell. After the third anniversary you can request a withdrawal. Only invest money you won't need during this period.</p>
+    </div>
+
+    <div class="invest-cta">
+      <button class="btn" data-invest>Invest now →</button>
+    </div>
+  </div>
+</section>
+
+<section id="raise" style="padding-top:0">
+  <div class="card raise reveal">
+    <div class="sec-kicker">Fundraising</div>
+    <div class="big num" data-count="raised">£0</div>
+    <div class="of">raised of a <span data-count="target">£0</span> target</div>
+    <div class="track"><div class="fill" id="raiseFill"></div></div>
+    <div class="track-meta"><span data-count="raisedPct" data-kind="plainPct">0%</span><span>Target</span></div>
+    <div class="raise-stats">
+      <div><span data-count="investors" data-kind="int">0</span><small>Investors</small></div>
+      <div><span data-count="avgTicket">£0</span><small>Average ticket</small></div>
+      <div><span data-count="remaining">£0</span><small>Remaining</small></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div><b style="color:#fff" id="footName">Nova Fund</b> · Managed by <span id="footMgr">Huzail Kamran Munir</span> · Figures shown as at <span id="asOf2"></span>. PKR values converted at <span id="fxRate2">₨376.20</span> per £1 (<span id="fxSrc2">indicative rate</span>).</div>
+  <div style="margin-top:8px">Capital at risk. Past performance is not a reliable indicator of future results; the value of investments can go down as well as up and you may get back less than you invest. The fund uses borrowing and options, which can magnify losses. Investments are subject to a minimum 3-year lock-up and cannot be withdrawn early.</div>
+</footer>
+
+<!-- invest modal -->
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="modal-card">
+    <div id="mForm">
+      <div class="modal-head">
+        <div><h3 id="mTitle">Invest in the fund</h3><p>Tell us how much you'd like to invest.</p></div>
+        <button class="x" data-close aria-label="Close">✕</button>
+      </div>
+      <div class="field"><label for="iName">Full name</label><input id="iName" autocomplete="name" placeholder="Your name"></div>
+      <div class="field"><label for="iEmail">Email</label><input id="iEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+      <div class="field">
+        <label for="iAmt">Amount</label>
+        <div class="amt-wrap"><span class="cur" id="iCur">£</span><input id="iAmt" inputmode="decimal" placeholder="0"></div>
+        <div class="quick" id="quick"></div>
+        <div class="amt-alt" id="iAlt"></div>
+      </div>
+      <label class="agree"><input type="checkbox" id="iAgree"><span>I understand my investment is <b style="color:#fff">locked for a minimum of 3 years</b> and cannot be withdrawn before then, and that I could lose some or all of the money I invest.</span></label>
+      <button class="btn" id="iSubmit" disabled>Send investment request</button>
+      <p class="fine">This opens an email to the fund manager with your details. No money is taken on this page.</p>
+    </div>
+    <div id="mDone" class="done" hidden>
+      <div class="tick-ico"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12l5 5L20 7"/></svg></div>
+      <h3 style="font-size:26px">Request ready</h3>
+      <p style="color:var(--muted);margin-top:10px;line-height:1.6">Your email app should have opened with your request. Send it and we'll be in touch with the next steps.</p>
+      <button class="btn ghost" data-close style="margin-top:24px">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   EDIT YOUR FUND'S NUMBERS HERE (all amounts in GBP)
+   ============================================================ */
+const FUND = {
+  name: "Nova Fund",
+  asOf: "12 Oct 2026",
+  contactEmail: "invest@yourfund.com",   // where "Invest" requests are sent
+  raised: 33000,          // capital raised from investors
+  target: 50000,          // fundraising target
+  investors: 12,
+  ytd: 9.2,               // year-to-date return, %
+  liabilities: {
+    loan: 25000,          // outstanding loan
+    monthlyCost: 425,     // monthly loan repayment
+    optionsIncome: 520    // average monthly income from options
+  },
+  assets: [               // TOTAL assets (investor money + loan proceeds), GBP
+    { name: "Global Equities",    value: 26300, ret: 18.4, color: "#7C5CFF" },
+    { name: "ETFs & Index",       value: 13800, ret: 11.2, color: "#00E5FF" },
+    { name: "Digital Assets",     value: 9100,  ret: 31.6, color: "#FF3D9A" },
+    { name: "Gold & Commodities", value: 5200,  ret: 7.9,  color: "#FFC53D" },
+    { name: "Bonds",              value: 2200,  ret: 3.4,  color: "#3DFFA2" },
+    { name: "Cash",               value: 7100,  ret: 4.1,  color: "#9AA0B4", isCash: true }
+  ],
+  history: [              // month-end NET asset value (assets minus loan), GBP
+    ["Nov", 33000],["Dec", 33600],["Jan", 32700],["Feb", 34100],["Mar", 35200],["Apr", 34600],
+    ["May", 35900],["Jun", 36800],["Jul", 36200],["Aug", 37600],["Sep", 38100],["Oct", 38700]
+  ],
+  fallbackRate: 376.2     // PKR per GBP, used if the live rate can't load
+};
+
+const MANAGER = {
+  name: "Huzail Kamran Munir",
+  age: 21,
+  bio: "Huzail founded the fund at 21. He graduated his BSc with 89% and is currently studying for an MSc in Computer Science, bringing an analytical, data-driven approach to how the fund's capital is invested and its risk is managed.",
+  // Add your track record here, one line per item, e.g. "+24% personal portfolio return in 2025"
+  trackRecord: []
+};
+
+/* ---------- derived values ---------- */
+const L = FUND.liabilities;
+const gross = FUND.assets.reduce((s,a)=>s+a.value,0);
+const nav = gross - L.loan;
+const cash = FUND.assets.filter(a=>a.isCash).reduce((s,a)=>s+a.value,0);
+const hist = FUND.history.map(h=>h[1]);
+const V = {
+  gross, nav, cash, raised: FUND.raised, target: FUND.target, investors: FUND.investors,
+  profit: nav - FUND.raised,
+  ret: (nav - FUND.raised) / FUND.raised * 100,
+  ytd: FUND.ytd,
+  cashPct: cash / gross * 100,
+  invested: gross - cash,
+  raisedPct: Math.min(100, FUND.raised / FUND.target * 100),
+  avgTicket: FUND.raised / FUND.investors,
+  remaining: Math.max(0, FUND.target - FUND.raised),
+  chg12: (hist[hist.length-1] - hist[0]) / hist[0] * 100,
+  peak: Math.max(...hist),
+  loan: L.loan, monthlyCost: L.monthlyCost, annualCost: L.monthlyCost * 12,
+  optionsIncome: L.optionsIncome, surplus: L.optionsIncome - L.monthlyCost,
+  coverage: L.optionsIncome / L.monthlyCost,
+  ltv: L.loan / gross * 100
+};
+const MONEY = new Set(["gross","nav","cash","raised","target","profit","invested","avgTicket","remaining","peak","loan","monthlyCost","annualCost","optionsIncome","surplus"]);
+
+/* ---------- currency ---------- */
+let currency = "GBP";
+let rate = FUND.fallbackRate;
+try { const saved = localStorage.getItem("fundCurrency"); if (saved === "PKR" || saved === "GBP") currency = saved; } catch(e){}
+
+const conv = gbp => currency === "GBP" ? gbp : gbp * rate;
+const sym = (c = currency) => c === "GBP" ? "£" : "₨";
+const fmtMoney = (n, c = currency) => sym(c) + Math.round(n).toLocaleString(c === "GBP" ? "en-GB" : "en-PK");
+const compact = new Intl.NumberFormat("en-GB",{notation:"compact",maximumFractionDigits:1});
+const fmtCompact = gbp => sym() + compact.format(conv(gbp));
+
+function setText(id, t){ const el=document.getElementById(id); if(el) el.textContent=t; }
+document.title = FUND.name + " — Live Overview";
+setText("fundName", FUND.name); setText("footName", FUND.name);
+setText("asOf", "as at " + FUND.asOf); setText("asOf2", FUND.asOf);
+setText("classCount", FUND.assets.filter(a=>!a.isCash).length);
+setText("mgrName", MANAGER.name); setText("footMgr", MANAGER.name);
+setText("mgrAge", MANAGER.age); setText("mgrBio", MANAGER.bio);
+const parts = MANAGER.name.trim().split(/\s+/);
+setText("initials", (parts[0][0] + parts[parts.length-1][0]).toUpperCase());
+
+function updateFxLabels(live){
+  const r = "₨" + rate.toFixed(2);
+  setText("fxRate", r); setText("fxRate2", r);
+  setText("fxSrc", live ? "· live" : "· indicative");
+  setText("fxSrc2", live ? "live rate" : "indicative rate");
+}
+updateFxLabels(false);
+
+/* ---------- track record ---------- */
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+document.getElementById("trackList").innerHTML = MANAGER.trackRecord.length
+  ? MANAGER.trackRecord.map((t,i)=>`<div class="track-item"><span class="ti">${i+1}</span><span>${esc(t)}</span></div>`).join("")
+  : `<div class="track-item placeholder"><span class="ti">!</span><span>Add your track record here: past returns, years investing, notable results. Edit <b>MANAGER.trackRecord</b> in the page's script.</span></div>`;
+
+/* ---------- animated counters ---------- */
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const counters = [...document.querySelectorAll("[data-count]")].map(el => ({
+  el, key: el.dataset.count, kind: el.dataset.kind || (MONEY.has(el.dataset.count) ? "money" : "pct"),
+  cur: 0, started: false, raf: 0
+}));
+const target = c => c.kind === "money" ? conv(V[c.key]) : V[c.key];
+function format(c, n){
+  if (c.kind === "money") return (n < 0 ? "−" : "") + fmtMoney(Math.abs(n));
+  if (c.kind === "int") return Math.round(n).toString();
+  if (c.kind === "plainPct") return n.toFixed(0) + "%";
+  if (c.kind === "ratio") return n.toFixed(2) + "×";
+  return (n >= 0 ? "+" : "") + n.toFixed(1) + "%";
+}
+const ease = t => t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+function animateCounter(c, dur = 1800){
+  cancelAnimationFrame(c.raf);
+  const from = c.cur, to = target(c);
+  if (reduce){ c.cur = to; c.el.textContent = format(c, to); return; }
+  const t0 = performance.now();
+  const step = now => {
+    const p = Math.min(1, (now - t0) / dur);
+    c.cur = from + (to - from) * ease(p);
+    c.el.textContent = format(c, c.cur);
+    if (p < 1) c.raf = requestAnimationFrame(step);
+  };
+  c.raf = requestAnimationFrame(step);
+}
+function startCounters(root){
+  const list = root.matches && root.matches("[data-count]") ? [root] : [];
+  list.concat([...root.querySelectorAll("[data-count]")]).forEach(n => {
+    const c = counters.find(x => x.el === n);
+    if (c && !c.started){ c.started = true; animateCounter(c); }
+  });
+}
+
+/* ---------- ticker ---------- */
+function renderTicker(){
+  const items = FUND.assets.map(a => `
+    <div class="tick"><span class="sw" style="background:${a.color}"></span>
+      <span>${esc(a.name)}</span><span class="tv">${fmtCompact(a.value)}</span>
+      <span class="tr">▲ ${a.ret.toFixed(1)}%</span></div>`).join("")
+    + `<div class="tick"><span class="sw" style="background:#fff"></span><span>Total assets</span>
+       <span class="tv">${fmtCompact(gross)}</span></div>
+       <div class="tick"><span class="sw" style="background:var(--pink)"></span><span>Loan</span>
+       <span class="tv">${fmtCompact(L.loan)}</span><span class="tr neg">LTV ${V.ltv.toFixed(0)}%</span></div>
+       <div class="tick"><span class="sw" style="background:var(--violet)"></span><span>Net asset value</span>
+       <span class="tv">${fmtCompact(nav)}</span><span class="tr">▲ ${V.ret.toFixed(1)}%</span></div>`;
+  document.getElementById("ticker").innerHTML = items + items;
+}
+
+/* ---------- line chart ---------- */
+const W = 1000, H = 340, PADT = 16, PADB = 8;
+const lo = Math.min(...hist), hi = Math.max(...hist);
+const span = hi - lo || 1;
+const yMin = lo - span * 0.15, yMax = hi + span * 0.1;
+const px = i => i / (hist.length - 1) * W;
+const py = v => PADT + (1 - (v - yMin) / (yMax - yMin)) * (H - PADT - PADB);
+function smoothPath(pts){
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++){
+    const p0 = pts[i-1] || pts[i], p1 = pts[i], p2 = pts[i+1], p3 = pts[i+2] || p2;
+    const c1 = [p1[0] + (p2[0]-p0[0])/6, p1[1] + (p2[1]-p0[1])/6];
+    const c2 = [p2[0] - (p3[0]-p1[0])/6, p2[1] - (p3[1]-p1[1])/6];
+    d += ` C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${p2[0]},${p2[1]}`;
+  }
+  return d;
+}
+const lineD = smoothPath(hist.map((v,i)=>[px(i), py(v)]));
+const lineEl = document.getElementById("line");
+lineEl.setAttribute("d", lineD);
+document.getElementById("area").setAttribute("d", lineD + ` L${W},${H} L0,${H} Z`);
+const ticks = 4;
+document.getElementById("gridG").innerHTML = Array.from({length:ticks+1},(_,i)=>{
+  const y = PADT + i/ticks*(H-PADT-PADB);
+  return `<line class="gridline" x1="0" x2="${W}" y1="${y}" y2="${y}"/>`;
+}).join("");
+document.getElementById("xLabels").innerHTML = FUND.history.map(h=>`<span>${esc(h[0])}</span>`).join("");
+function renderYLabels(){
+  document.getElementById("yLabels").innerHTML = Array.from({length:ticks+1},(_,i)=>{
+    const y = PADT + i/ticks*(H-PADT-PADB);
+    const v = yMax - i/ticks*(yMax-yMin);
+    return `<span style="top:${y/H*100}%">${fmtCompact(v)}</span>`;
+  }).join("");
+}
+lineEl.style.strokeDasharray = 3000; lineEl.style.strokeDashoffset = 3000;
+function drawChart(){
+  lineEl.style.transition = reduce ? "none" : "stroke-dashoffset 2.2s cubic-bezier(.6,0,.2,1)";
+  lineEl.style.strokeDashoffset = 0;
+  document.getElementById("chartWrap").classList.add("drawn");
+}
+const plot = document.getElementById("plot"), tip = document.getElementById("tip"),
+      hLine = document.getElementById("hLine"), hDot = document.getElementById("hDot");
+let hoverIdx = -1;
+function showHover(i){
+  hoverIdx = i;
+  const x = i/(hist.length-1)*100, y = py(hist[i])/H*100;
+  hLine.style.left = x + "%"; hDot.style.left = x + "%"; hDot.style.top = y + "%";
+  tip.style.left = Math.min(88, Math.max(12, x)) + "%"; tip.style.top = y + "%";
+  const chg = i ? (hist[i]-hist[i-1])/hist[i-1]*100 : 0;
+  tip.innerHTML = `${esc(FUND.history[i][0])}<b>${fmtMoney(conv(hist[i]))}</b><span style="color:${chg>=0?'var(--green)':'var(--pink)'}">${chg>=0?'▲':'▼'} ${Math.abs(chg).toFixed(1)}% m/m</span>`;
+  [hLine,hDot,tip].forEach(e=>e.style.opacity=1);
+}
+function pick(clientX){
+  const r = plot.getBoundingClientRect();
+  return Math.round(Math.min(1,Math.max(0,(clientX-r.left)/r.width))*(hist.length-1));
+}
+plot.addEventListener("mousemove", e => showHover(pick(e.clientX)));
+plot.addEventListener("touchmove", e => showHover(pick(e.touches[0].clientX)), {passive:true});
+plot.addEventListener("mouseleave", () => { hoverIdx=-1; [hLine,hDot,tip].forEach(e=>e.style.opacity=0); });
+
+/* ---------- donut + legend ---------- */
+const R = 90, C = 2*Math.PI*R, GAP = 2.5;
+const donutSvg = document.getElementById("donutSvg"), donut = document.getElementById("donut");
+let acc = 0;
+donutSvg.innerHTML = `<circle cx="110" cy="110" r="${R}" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="22"/>` +
+  FUND.assets.map((a,i)=>{
+    const segLen = a.value/gross*C;
+    const s = `<circle class="seg" data-i="${i}" cx="110" cy="110" r="${R}" stroke="${a.color}"
+      stroke-dasharray="0 ${C}" stroke-dashoffset="${-acc}" data-len="${Math.max(0,segLen-GAP)}"
+      style="transition-delay:${i*0.12}s;filter:drop-shadow(0 0 8px ${a.color}66)"/>`;
+    acc += segLen; return s;
+  }).join("");
+const segs = [...donutSvg.querySelectorAll(".seg")];
+function drawDonut(){ segs.forEach(s => s.setAttribute("stroke-dasharray", `${s.dataset.len} ${C}`)); }
+const legend = document.getElementById("legend");
+const maxVal = Math.max(...FUND.assets.map(x=>x.value));
+legend.innerHTML = FUND.assets.map((a,i)=>`
+  <div class="leg" data-i="${i}">
+    <span class="sw" style="background:${a.color};box-shadow:0 0 12px ${a.color}88"></span>
+    <span class="nm">${esc(a.name)}</span>
+    <span class="amt"><span class="lv">${fmtMoney(conv(a.value))}</span><small>${(a.value/gross*100).toFixed(1)}%</small></span>
+    <span class="bar"><span style="background:${a.color}" data-w="${a.value/maxVal*100}"></span></span>
+  </div>`).join("");
+const legs = [...legend.querySelectorAll(".leg")];
+let hlIdx = -1;
+function renderCenter(){
+  if (hlIdx < 0){ setText("dcL","Total assets"); setText("dcV", fmtMoney(conv(gross))); setText("dcP", FUND.assets.length + " asset classes"); }
+  else { const a = FUND.assets[hlIdx]; setText("dcL", a.name); setText("dcV", fmtMoney(conv(a.value))); setText("dcP", (a.value/gross*100).toFixed(1) + "% of assets"); }
+}
+function highlight(i){
+  hlIdx = i;
+  donut.classList.toggle("has-hl", i >= 0);
+  segs.forEach(s => s.classList.toggle("hl", +s.dataset.i === i));
+  legs.forEach(l => l.classList.toggle("hl", +l.dataset.i === i));
+  renderCenter();
+}
+[...segs, ...legs].forEach(el => {
+  el.addEventListener("mouseenter", () => highlight(+el.dataset.i));
+  el.addEventListener("mouseleave", () => highlight(-1));
+  el.addEventListener("click", () => highlight(hlIdx === +el.dataset.i ? -1 : +el.dataset.i));
+});
+function drawLegendBars(){ legend.querySelectorAll(".bar span").forEach(b => b.style.width = b.dataset.w + "%"); }
+
+/* ---------- return bars ---------- */
+const rb = document.getElementById("rbars");
+const maxRet = Math.max(...FUND.assets.map(a=>a.ret));
+rb.innerHTML = [...FUND.assets].sort((a,b)=>b.ret-a.ret).map((a,i)=>`
+  <div class="rrow">
+    <span class="rn">${esc(a.name)}</span>
+    <span class="rt"><span style="background:linear-gradient(90deg,${a.color}88,${a.color});box-shadow:0 0 18px ${a.color}66;transition-delay:${i*0.1}s" data-w="${a.ret/maxRet*100}"></span></span>
+    <span class="rv">+${a.ret.toFixed(1)}%</span>
+  </div>`).join("");
+function drawReturnBars(){ rb.querySelectorAll(".rt span").forEach(b => b.style.width = b.dataset.w + "%"); }
+
+/* ---------- liabilities visuals ---------- */
+const arc = document.getElementById("ltvArc");
+const ARC_LEN = Math.PI * 90;
+arc.style.strokeDasharray = ARC_LEN; arc.style.strokeDashoffset = ARC_LEN;
+const st = document.getElementById("ltvStatus");
+const [ltvTxt, ltvCol] = V.ltv < 50 ? ["Conservative leverage", "var(--green)"] : V.ltv < 70 ? ["Moderate leverage", "var(--amber)"] : ["High leverage", "var(--pink)"];
+st.querySelector("span").textContent = ltvTxt;
+st.style.color = ltvCol; st.style.background = "rgba(255,255,255,.04)"; st.style.border = "1px solid rgba(255,255,255,.1)";
+function drawLiabilities(){
+  arc.style.strokeDashoffset = ARC_LEN * (1 - Math.min(1, V.ltv / 100));
+  const s = document.getElementById("stack").children;
+  s[0].style.width = (nav / gross * 100) + "%";
+  s[1].style.width = (L.loan / gross * 100) + "%";
+  const m = Math.max(L.optionsIncome, L.monthlyCost);
+  document.getElementById("barIncome").style.width = (L.optionsIncome / m * 100) + "%";
+  document.getElementById("barCost").style.width = (L.monthlyCost / m * 100) + "%";
+}
+
+/* ---------- currency toggle ---------- */
+const toggle = document.getElementById("toggle"), thumb = document.getElementById("thumb");
+const btns = [...toggle.querySelectorAll("button")];
+function placeThumb(){
+  const active = btns.find(b=>b.dataset.cur===currency);
+  thumb.style.width = active.offsetWidth + "px";
+  thumb.style.transform = `translateX(${active.offsetLeft - 4}px)`;
+  btns.forEach(b => { const on = b === active; b.classList.toggle("active", on); b.setAttribute("aria-pressed", on); });
+}
+function refreshCurrency(animate = true){
+  placeThumb();
+  counters.forEach(c => { if (c.started && c.kind === "money") animate ? animateCounter(c, 1100) : (c.cur = target(c), c.el.textContent = format(c, c.cur)); });
+  renderTicker(); renderYLabels(); renderCenter();
+  legs.forEach((l,i)=> l.querySelector(".lv").textContent = fmtMoney(conv(FUND.assets[i].value)));
+  if (hoverIdx >= 0) showHover(hoverIdx);
+  syncModalCurrency();
+}
+function setCurrency(cur){
+  if (cur === currency) return;
+  currency = cur;
+  try { localStorage.setItem("fundCurrency", cur); } catch(e){}
+  refreshCurrency(true);
+}
+btns.forEach(b => b.addEventListener("click", e => { e.stopPropagation(); setCurrency(b.dataset.cur); }));
+toggle.addEventListener("click", () => setCurrency(currency === "GBP" ? "PKR" : "GBP"));
+document.addEventListener("keydown", e => {
+  if (e.target.closest && e.target.closest("input")) return;
+  if ((e.key === "c" || e.key === "C") && !e.metaKey && !e.ctrlKey) setCurrency(currency === "GBP" ? "PKR" : "GBP");
+});
+window.addEventListener("resize", placeThumb);
+
+/* ---------- invest modal ---------- */
+const modal = document.getElementById("modal");
+const iName = document.getElementById("iName"), iEmail = document.getElementById("iEmail"),
+      iAmt = document.getElementById("iAmt"), iAgree = document.getElementById("iAgree"),
+      iSubmit = document.getElementById("iSubmit"), iAlt = document.getElementById("iAlt");
+let lastFocus = null;
+function openModal(){
+  lastFocus = document.activeElement;
+  document.getElementById("mForm").hidden = false; document.getElementById("mDone").hidden = true;
+  modal.classList.add("open"); document.body.classList.add("modal-open");
+  syncModalCurrency();
+  setTimeout(() => iName.focus(), 300);
+}
+function closeModal(){
+  modal.classList.remove("open"); document.body.classList.remove("modal-open");
+  if (lastFocus) lastFocus.focus();
+}
+document.querySelectorAll("[data-invest]").forEach(b => b.addEventListener("click", openModal));
+modal.addEventListener("click", e => { if (e.target === modal || e.target.closest("[data-close]")) closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && modal.classList.contains("open")) closeModal(); });
+
+const amtVal = () => parseFloat(iAmt.value.replace(/[^0-9.]/g, "")) || 0;
+function syncModalCurrency(){
+  setText("iCur", sym());
+  const q = currency === "GBP" ? [1000, 2500, 5000, 10000] : [250000, 500000, 1000000, 2500000];
+  document.getElementById("quick").innerHTML = q.map(v => `<button type="button" data-v="${v}">${sym()}${compact.format(v)}</button>`).join("");
+  updateAlt();
+}
+document.getElementById("quick").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  iAmt.value = Number(b.dataset.v).toLocaleString(currency === "GBP" ? "en-GB" : "en-PK");
+  validate();
+});
+function updateAlt(){
+  const v = amtVal();
+  if (!v){ iAlt.textContent = ""; return; }
+  iAlt.textContent = currency === "GBP" ? `≈ ${fmtMoney(v * rate, "PKR")}` : `≈ ${fmtMoney(v / rate, "GBP")}`;
+}
+function validate(){
+  updateAlt();
+  const ok = iName.value.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(iEmail.value.trim()) && amtVal() > 0 && iAgree.checked;
+  iSubmit.disabled = !ok;
+}
+[iName, iEmail, iAmt].forEach(el => el.addEventListener("input", validate));
+iAgree.addEventListener("change", validate);
+iSubmit.addEventListener("click", () => {
+  const v = amtVal();
+  const gbp = currency === "GBP" ? v : v / rate;
+  const subject = `Investment request: ${fmtMoney(v)} — ${iName.value.trim()}`;
+  const body = [
+    `Name: ${iName.value.trim()}`,
+    `Email: ${iEmail.value.trim()}`,
+    `Amount: ${fmtMoney(v)}${currency === "PKR" ? ` (≈ ${fmtMoney(gbp, "GBP")})` : ` (≈ ${fmtMoney(gbp * rate, "PKR")})`}`,
+    ``,
+    `I confirm I understand my investment is locked for a minimum of 3 years and cannot be withdrawn before then, and that I could lose some or all of the money I invest.`
+  ].join("\n");
+  window.location.href = `mailto:${FUND.contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  document.getElementById("mForm").hidden = true; document.getElementById("mDone").hidden = false;
+});
+
+/* ---------- live FX rate ---------- */
+fetch("https://open.er-api.com/v6/latest/GBP")
+  .then(r => r.json())
+  .then(d => { if (d && d.rates && d.rates.PKR){ rate = d.rates.PKR; updateFxLabels(true); refreshCurrency(currency === "PKR"); } })
+  .catch(() => {});
+
+/* ---------- scroll reveal & triggers ---------- */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    const el = en.target;
+    el.classList.add("in");
+    startCounters(el);
+    if (el.querySelector("#chartWrap")) drawChart();
+    if (el.querySelector("#donut")) drawDonut();
+    if (el.querySelector("#legend")) drawLegendBars();
+    if (el.querySelector("#rbars")) drawReturnBars();
+    if (el.querySelector("#stack") || el.querySelector("#ltvArc") || el.querySelector("#barIncome")) drawLiabilities();
+    if (el.querySelector("#timeline")){ document.getElementById("timeline").classList.add("go"); document.getElementById("tlFill").style.width = "100%"; }
+    if (el.querySelector("#raiseFill")) document.getElementById("raiseFill").style.width = V.raisedPct + "%";
+    io.unobserve(el);
+  });
+}, { threshold: 0.15 });
+document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+
+/* side nav active state */
+const sideLinks = [...document.querySelectorAll("#side a")];
+const navIO = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    sideLinks.forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#" + en.target.id));
+    const act = sideLinks.find(a => a.classList.contains("active"));
+    if (act && getComputedStyle(document.getElementById("side")).flexDirection === "row")
+      act.scrollIntoView({block:"nearest", inline:"center", behavior: reduce ? "auto" : "smooth"});
+  });
+}, { rootMargin: "-45% 0px -50% 0px" });
+sideLinks.forEach(a => { const s = document.querySelector(a.getAttribute("href")); if (s) navIO.observe(s); });
+
+/* card spotlight */
+document.querySelectorAll(".card").forEach(card => card.addEventListener("pointermove", e => {
+  const r = card.getBoundingClientRect();
+  card.style.setProperty("--mx", (e.clientX - r.left) + "px");
+  card.style.setProperty("--my", (e.clientY - r.top) + "px");
+}));
+
+/* scroll progress, nav state, hero parallax */
+const prog = document.getElementById("progress"), topNav = document.getElementById("nav"),
+      heroInner = document.querySelector(".hero-inner");
+let ticking = false;
+window.addEventListener("scroll", () => {
+  if (ticking) return; ticking = true;
+  requestAnimationFrame(() => {
+    const y = window.scrollY, max = document.documentElement.scrollHeight - innerHeight;
+    prog.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
+    topNav.classList.toggle("scrolled", y > 30);
+    if (!reduce && y < innerHeight){
+      heroInner.style.transform = `translateY(${y * 0.3}px) scale(${1 - y / innerHeight * 0.08})`;
+      heroInner.style.opacity = 1 - y / (innerHeight * 0.85);
+    }
+    ticking = false;
+  });
+}, { passive: true });
+
+/* init */
+renderTicker(); renderYLabels(); renderCenter(); syncModalCurrency();
+requestAnimationFrame(placeThumb);
+if (document.fonts) document.fonts.ready.then(placeThumb);
+</script>
+</body>
+</html>
